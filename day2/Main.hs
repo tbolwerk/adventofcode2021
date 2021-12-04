@@ -37,20 +37,19 @@ instance Applicative (State s) where
     (State af) <*> (State aa) = State $ \s0 -> let (f, s1) = af s0
                                                in let (a,s2) = aa s1
                                                    in (f a, s2)
-instance Monad (State a) where
+instance Monad (State s) where
     return = pure
     ma >>= f = State $ \s0  -> let (a ,s1) = getState ma s0 
                                 in getState (f a) s1
 
-
-calculatePosition dir = do
+calculateHorizontalDepth :: Direction -> State Position Int
+calculateHorizontalDepth dir = do
    State $ \(Position d h) -> case dir of
-                    Forward x -> let newPos = Position d (h + x) in (newPos, newPos)
-                    Up x -> let newPos = Position (d - x) h in (newPos, newPos)
-                    Down x -> let newPos = Position (d + x) h in (newPos, newPos)
+                    Forward x -> let newPos = Position d (h + x) in (depth newPos * horizontal newPos, newPos)
+                    Up x -> let newPos = Position (d - x) h in (depth newPos * horizontal newPos, newPos)
+                    Down x -> let newPos = Position (d + x) h in (depth newPos * horizontal newPos, newPos)
 
 main :: IO Int
 main = do
    st <- readFile "input"
-   let pos = exec (mapM calculatePosition (mapToDirection st)) ( (Position 0 0))
-   return (depth pos * horizontal pos)
+   return $ last $ eval (mapM calculateHorizontalDepth (mapToDirection st)) (Position 0 0)
